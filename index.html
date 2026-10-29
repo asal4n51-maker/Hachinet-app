@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hachi Net - ISP Management & Operations Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-600 p-2.5 rounded-xl text-white font-bold text-xl shadow-lg shadow-blue-600/30">
+                    <i class="fa-solid fa-network-wired"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wide text-white">HACHI NET <span class="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full border border-blue-500/30">Peera.id</span></h1>
+                    <p class="text-xs text-slate-400">ISP Operational & Network Dashboard</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openAddCustomerModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-lg shadow-blue-600/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> Tambah Pelanggan
+                </button>
+            </div>
+        </div>
+    </header>
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+        <div class="flex overflow-x-auto space-x-2 border-b border-slate-700 pb-2 scrollbar-none">
+            <button onclick="switchTab('customers')" id="tab-btn-customers" class="px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white transition flex items-center gap-2 shrink-0 shadow-md">
+                <i class="fa-solid fa-users"></i> Data Pelanggan
+            </button>
+            <button onclick="switchTab('fiber')" id="tab-btn-fiber" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2 shrink-0">
+                <i class="fa-solid fa-sitemap"></i> Distribusi ODC/ODP
+            </button>
+            <button onclick="switchTab('mikrotik')" id="tab-btn-mikrotik" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2 shrink-0">
+                <i class="fa-solid fa-router"></i> MikroTik ROS
+            </button>
+            <button onclick="switchTab('olt')" id="tab-btn-olt" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2 shrink-0">
+                <i class="fa-solid fa-tower-broadcast"></i> OLT GPON/EPON
+            </button>
+            <button onclick="switchTab('cli')" id="tab-btn-cli" class="px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2 shrink-0">
+                <i class="fa-solid fa-terminal"></i> CLI Console
+            </button>
+        </div>
+        <div id="tab-content-customers" class="space-y-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl">
+                    <div class="text-slate-400 text-xs font-medium">Total Pelanggan</div>
+                    <div id="stat-total" class="text-2xl font-bold text-white mt-1">0</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl">
+                    <div class="text-emerald-400 text-xs font-medium flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online</div>
+                    <div id="stat-online" class="text-2xl font-bold text-emerald-400 mt-1">0</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl">
+                    <div class="text-rose-400 text-xs font-medium flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Offline / Isolir</div>
+                    <div id="stat-offline" class="text-2xl font-bold text-rose-400 mt-1">0</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl">
+                    <div class="text-amber-400 text-xs font-medium">Pendapatan Bulanan</div>
+                    <div id="stat-revenue" class="text-xl font-bold text-amber-400 mt-1">Rp 0</div>
+                </div>
+            </div>
+            <div class="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden shadow-xl">
+                <div class="p-4 border-b border-slate-700 flex flex-wrap justify-between items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <input type="text" id="searchInput" oninput="renderCustomers()" placeholder="Cari nama / IP / ODP..." class="bg-slate-900 border border-slate-700 text-sm rounded-xl px-4 py-2 focus:outline-none focus:border-blue-500 text-white w-64">
+                        <select id="filterStatus" onchange="renderCustomers()" class="bg-slate-900 border border-slate-700 text-sm rounded-xl px-3 py-2 text-white focus:outline-none">
+                            <option value="all">Semua Status</option>
+                            <option value="online">Online</option>
+                            <option value="offline">Offline / Isolir</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-slate-900/50 text-slate-400 uppercase text-xs tracking-wider border-b border-slate-700">
+                                <th class="p-4">Pelanggan</th>
+                                <th class="p-4">Paket / Harga</th>
+                                <th class="p-4">IP & Jaringan</th>
+                                <th class="p-4">ODP / Port</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-center">Aksi & WA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerTableBody" class="divide-y divide-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="tab-content-fiber" class="hidden space-y-6">
+            <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Distribusi Jaringan Fiber Optik (ODC & ODP)</h3>
+                        <p class="text-xs text-slate-400">Pemetaan port optik dan redaman jalur distribusi Hachi Net.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="odpContainer"></div>
+            </div>
+        </div>
+        <div id="tab-content-mikrotik" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl">
+                    <div class="text-slate-400 text-xs">Router Model</div>
+                    <div class="text-lg font-bold text-white mt-1">RB750Gr3 (hEX)</div>
+                    <div class="text-xs text-emerald-400 mt-2"><i class="fa-solid fa-check-circle"></i> Connected via REST API</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl">
+                    <div class="text-slate-400 text-xs">CPU Usage</div>
+                    <div id="mikrotikCpu" class="text-2xl font-bold text-blue-400 mt-1">4%</div>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 p-5 rounded-2xl">
+                    <div class="text-slate-400 text-xs">Active PPPoE Sessions</div>
+                    <div id="mikrotikSessions" class="text-2xl font-bold text-emerald-400 mt-1">0</div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-content-olt" class="hidden space-y-6">
+            <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow-xl">
+                <h3 class="text-lg font-bold text-white mb-2">GPON / EPON OLT Monitor</h3>
+                <p class="text-xs text-slate-400 mb-4">Status PON port dan daya pancar optik ONU.</p>
+                <div class="space-y-3" id="oltContainer"></div>
+            </div>
+        </div>
+        <div id="tab-content-cli" class="hidden space-y-6">
+            <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 font-mono text-sm shadow-2xl">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-3 text-xs text-slate-400">
+                    <span>Hachi Net Terminal (MikroTik ROS & OLT Simulator)</span>
+                    <span class="text-emerald-400">● Ready</span>
+                </div>
+                <div id="cliOutput" class="h-64 overflow-y-auto space-y-2 text-slate-300 mb-3 text-xs">
+                    <div>Welcome to Hachi Net CLI v2.0. Type 'help' for commands.</div>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold">&gt;</span>
+                    <input type="text" id="cliInput" onkeypress="handleCliInput(event)" placeholder="Ketik perintah..." class="bg-transparent border-none focus:outline-none text-white w-full text-xs font-mono">
+                </div>
+            </div>
+        </div>
+    </main>
+    <div id="customerModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="text-lg font-bold text-white">Tambah Pelanggan Baru</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="customerForm" onsubmit="saveCustomer(event)" class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Nama Lengkap</label>
+                    <input type="text" id="name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">No. WhatsApp</label>
+                        <input type="text" id="phone" placeholder="628xxxxxxxxxx" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Paket Bandwidth</label>
+                        <select id="package" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                            <option value="15 Mbps">15 Mbps - Rp 100.000</option>
+                            <option value="30 Mbps">30 Mbps - Rp 150.000</option>
+                            <option value="50 Mbps">50 Mbps - Rp 250.000</option>
+                            <option value="100 Mbps">100 Mbps - Rp 450.000</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">IP Address</label>
+                        <input type="text" id="ip" placeholder="192.168.10.x" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ODP / No Port</label>
+                        <input type="text" id="odp" placeholder="ODP-CIM-01" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-700">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-700 rounded-xl text-white">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 rounded-xl text-white font-medium">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        let customers = JSON.parse(localStorage.getItem('hachinet_customers')) || [
+            { name: "Budi Santoso", phone: "6283144675210", package: "30 Mbps", price: 150000, ip: "192.168.10.2", odp: "ODP-CIM-01 (Port 1)", status: "online", ping: "4ms" },
+            { name: "Siti Aminah", phone: "6283144675310", package: "15 Mbps", price: 100000, ip: "192.168.10.3", odp: "ODP-CIM-01 (Port 2)", status: "offline", ping: "-" }
+        ];
+        function saveData() {
+            localStorage.setItem('hachinet_customers', JSON.stringify(customers));
+            renderCustomers(); renderStats(); renderFiber();
+        }
+        function switchTab(tabId) {
+            ['customers', 'fiber', 'mikrotik', 'olt', 'cli'].forEach(t => {
+                document.getElementById(`tab-content-${t}`).classList.add('hidden'); document.getElementById(`tab-btn-${t}`).className = "px-4 py-2 rounded-xl text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition flex items-center gap-2 shrink-0";
+            });
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden'); document.getElementById(`tab-btn-${tabId}`).className = "px-4 py-2 rounded-xl text-sm font-medium bg-blue-600 text-white transition flex items-center gap-2 shrink-0 shadow-md";
+        }
+        function renderStats() {
+            document.getElementById('stat-total').innerText = customers.length;
+            const onlineCount = customers.filter(c => c.status === 'online').length;
+            document.getElementById('stat-online').innerText = onlineCount;
+            document.getElementById('stat-offline').innerText = customers.length - onlineCount;
+            const totalRev = customers.reduce((acc, c) => acc + (c.status === 'online' ? c.price : 0), 0);
+            document.getElementById('stat-revenue').innerText = 'Rp ' + totalRev.toLocaleString('id-ID');
+            document.getElementById('mikrotikSessions').innerText = onlineCount;
+        }
+        function renderCustomers() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const filter = document.getElementById('filterStatus').value;
+            const tbody = document.getElementById('customerTableBody');
+            tbody.innerHTML = '';
+            const filtered = customers.filter(c => {
+                const matchSearch = c.name.toLowerCase().includes(search) || c.ip.includes(search) || c.odp.toLowerCase().includes(search);
+                const matchFilter = filter === 'all' || c.status === filter;
+                return matchSearch && matchFilter;
+            });
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">Tidak ada data pelanggan ditemukan.</td></tr>`;
+                return;
+            }
+            filtered.forEach((c, index) => {
+                const isOnline = c.status === 'online';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900/40 transition">
+                        <td class="p-4">
+                            <div class="font-bold text-white">${c.name}</div>
+                            <div class="text-xs text-slate-400"><i class="fa-brands fa-whatsapp text-emerald-400"></i> +${c.phone}</div>
+                        </td>
+                        <td class="p-4">
+                            <div class="text-white font-medium">${c.package}</div>
+                            <div class="text-xs text-amber-400">Rp ${c.price.toLocaleString('id-ID')}</div>
+                        </td>
+                        <td class="p-4"><code class="bg-slate-900 px-2 py-1 rounded text-blue-400 text-xs">${c.ip}</code></td>
+                        <td class="p-4 text-xs text-slate-300">${c.odp}</td>
+                        <td class="p-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1.5 ${isOnline ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">
+                                <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}"></span>
+                                ${isOnline ? 'Online (' + c.ping + ')' : 'Isolir / Offline'}
+                            </span>
+                        </td>
+                        <td class="p-4 text-center space-x-1">
+                            <button onclick="toggleIsolir(${index})" class="px-2.5 py-1 rounded-lg text-xs font-medium ${isOnline ? 'bg-rose-600/20 text-rose-400 hover:bg-rose-600/30' : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30'}" title="Isolir / Buka">
+                                <i class="fa-solid ${isOnline ? 'fa-ban' : 'fa-circle-check'}"></i>
+                            </button>
+                            <a href="https://wa.me/${c.phone}?text=Halo\%20kak\%20${encodeURIComponent(c.name)},%20tagihan%20internet%20Hachi%20Net%20paket%20${encodeURIComponent(c.package)}\%20sebesar\%20Rp\%20${c.price.toLocaleString('id-ID')}%20silakan%20dilunasi." target="_blank" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs inline-block" title="Kirim Tagihan WA">
+                                <i class="fa-brands fa-whatsapp"></i>
+                            </a>
+                            <button onclick="deleteCustomer(${index})" class="px-2.5 py-1 bg-slate-700 hover:bg-rose-600 text-white rounded-lg text-xs" title="Hapus">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        function renderFiber() {
+            document.getElementById('odpContainer').innerHTML = `
+                <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-bold text-white text-sm">ODP-CIM-01 (Cimanggis Net)</span>
+                        <span class="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">Active (-18.4 dBm)</span>
+                    </div>
+                </div>
+            `;
+            document.getElementById('oltContainer').innerHTML = `
+                <div class="bg-slate-900 border border-slate-700 p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-white text-sm">PON Port 1 / 1 (EPON)</div>
+                        <div
